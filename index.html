@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Brainfuck View</title>
+
+    <!-- Material -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <style>
+        ul.horizontal-list {
+            min-width: 696px;
+            list-style: none;
+            padding-top: 20px;
+        }
+
+        ul.horizontal-list li {
+            display: inline;
+            cursor: pointer;
+        }
+
+        .active {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .break-point {
+            background-color: darkgray;
+            color: white;
+        }
+
+        .console {
+            min-width: 100%;
+            max-height: 100%;
+            min-height: 500px;
+            background-color: #424242;
+            color: white;
+            border-radius: 0.5em;
+            padding: 1em;
+           display: inline-block;
+        }
+    </style>
+
+    <script type="text/x-template" id="interpreter-template">
+        <div>
+            <div class="row">
+                <button class="waves-effect waves-light btn" v-on:click="run">run</button>
+                <button class="waves-effect waves-light btn" v-on:click="debug">debug</button>
+                <button class="waves-effect waves-light btn" v-on:click="step">step</button>
+                <button class="waves-effect waves-light btn" v-on:click="stop">stop</button>
+            </div>
+            Memory Index: {{currentMemoryIndex}},
+            Code Index: {{currentCodeIndex}},
+            <div class="row">
+                {{ message }}
+            </div>
+            <div class="row">
+                <ul class="horizontal-list">
+                    <li v-for="(cell, index) in memory"
+                        v-on:click="setMemoryBreakPoint(index)"
+                        v-bind:class="{ active: index==currentMemoryIndex,
+                                        'break-point': isMemoryBreakPoint(index)}">
+                        {{ cell.value }}
+                    </li>
+                </ul>
+            </div>
+            <div class="row">
+
+                <pre><span v-for="(char, index) in codeText"
+                           v-on:click="setCodeBreakPoint(index)"
+                           v-bind:class="{active: index==(currentCodeIndex-1),
+                                          'break-point': isCodeBreakPoint(index)}"
+                           style="cursor: pointer;white-space: pre-wrap;">{{ char }}</span></pre>
+            </div>
+            <div class="row">
+                <div class="console">
+                    <pre>{{ output }}</pre>
+                </div>
+            </div>
+        </div>
+    </script>
+
+</head>
+<body>
+
+<div id="app">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="#" class="brand-logo">Brainfuck View</a>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="row">
+            <textarea class="materialize-textarea" v-model="code" placeholder="add code here"></textarea>
+        </div>
+        <div class="row">
+            <interpreter v-bind:code-text="code"></interpreter>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+<!-- Material -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<script>
+    function getMemory() {
+        memory = [];
+        for (i = 0; i < 256; i++) {
+            memory.push({value: 0,});
+        }
+        return memory;
+    }
+
+    Vue.component("interpreter", {
+        template: "#interpreter-template",
+        props: {
+            codeText: String
+        },
+        data: function () {
+            return {
+                maxSize: 256,
+                memory: getMemory(),
+                currentMemoryIndex: 0,
+                currentCodeIndex: 0,
+                message: '',
+                shouldStop: false,
+                isRunning: false,
+                codeBreakPoints: {},
+                memoryBreakPoints: {},
+                output: '',
+            };
+        },
+        computed: {},
+        methods: {
+            init: function () {
+                this.initMemory();
+                this.currentCodeIndex = 0;
+                this.currentMemoryIndex = 0;
+                this.isRunning = true;
+                this.shouldStop = false;
+                this.loopStack = [];
+                this.message = '';
+                this.output = '';
+            },
+
+            initMemory: function () {
+                this.memory = getMemory();
+            },
+            run: function () {
+                this.init();
+                while ((!this.shouldStop) && this.currentCodeIndex != this.codeText.length) {
+                    this.step();
+                }
+            },
+            step: function (event) {
+                if (this.shouldStop && this.isRunning) {
+                    return
+                }
+                if (!this.isRunning) {
+                    this.init();
+                }
+                let commands = {
+                    '+': this.add,
+                    '-': this.sub,
+                    '>': this.right,
+                    '<': this.left,
+                    '[': this.startLoop,
+                    ']': this.stopLoop,
+                    '.': this.print,
+                };
+                let stop = false;
+
+                while (!stop) {
+                    console.debug('Current value ' + this.codeText[this.currentCodeIndex]);
+                    console.debug(this.codeText[this.currentCodeIndex] in commands);
+
+                    if (this.codeText[this.currentCodeIndex] in commands) {
+                        commands[this.codeText[this.currentCodeIndex]]();
+                        stop = true;
+                    }
+
+                    if (this.currentCodeIndex < this.codeText.length) {
+                        this.currentCodeIndex += 1;
+                    } else {
+                        this.shouldStop = true;
+                        return;
+                    }
+                    if (this.isInBreakPoint()) {
+                        return;
+                    }
+                }
+            },
+            stop: function () {
+                this.shouldStop = false;
+                this.currentMemoryIndex = 0;
+                this.currentCodeIndex = 0;
+                this.initMemory();
+                this.message = '';
+            },
+            debug: function () {
+                this.init();
+                while ((!this.shouldStop) &&
+                this.currentCodeIndex !== this.codeText.length &&
+                (!this.isInBreakPoint())) {
+                    this.step();
+                }
+            },
+            add: function () {
+                this.memory[this.currentMemoryIndex].value += 1;
+                if (this.memory[this.currentMemoryIndex].value === this.maxSize) {
+                    this.memory[this.currentMemoryIndex].value = 0;
+                }
+            },
+            sub: function () {
+                if (this.memory[this.currentMemoryIndex].value === 0) {
+                    this.memory[this.currentMemoryIndex].value = this.maxSize;
+                }
+                this.memory[this.currentMemoryIndex].value -= 1;
+            },
+            right: function () {
+                if (this.currentMemoryIndex === this.memory.length) {
+                    this.shouldStop = true;
+                    this.message = 'Memory out of index.';
+                } else {
+                    this.currentMemoryIndex += 1;
+                }
+            },
+            left: function () {
+                if (this.currentMemoryIndex === 0) {
+                    this.shouldStop = true;
+                    this.message = 'Memory out of index.';
+                } else {
+                    this.currentMemoryIndex -= 1;
+                }
+            },
+            startLoop: function () {
+                if (this.memory[this.currentMemoryIndex].value !== 0) {
+                    this.loopStack.push(this.currentCodeIndex);
+                } else {
+                    while (this.currentCodeIndex < this.codeText.length) {
+                        if (this.codeText[this.currentCodeIndex] === ']') {
+                            this.currentCodeIndex += 1;
+                            return
+                        }
+                        this.currentCodeIndex += 1;
+                    }
+                    this.shouldStop = true;
+                    this.message = 'Invalid syntax.';
+                }
+            },
+            stopLoop: function () {
+                if (this.loopStack.length === 0) {
+                    this.shouldStop = true;
+                    this.message = 'Invalid syntax.';
+                } else {
+                    if (this.memory[this.currentMemoryIndex].value === 0) {
+                        this.loopStack.pop();
+                    } else {
+                        this.currentCodeIndex = this.loopStack[this.loopStack.length - 1];
+                    }
+                }
+            },
+            print: function () {
+                this.output = this.output.concat(String.fromCharCode(this.memory[this.currentMemoryIndex].value))
+            },
+            setCodeBreakPoint: function (index) {
+                if (this.isCodeBreakPoint(index)) {
+                    delete this.codeBreakPoints[index];
+                } else {
+                    this.codeBreakPoints[index] = true;
+                }
+                this.$forceUpdate();
+            },
+            isCodeBreakPoint: function (index) {
+                return this.codeBreakPoints.hasOwnProperty(index);
+            },
+            setMemoryBreakPoint: function (index) {
+                if (this.isMemoryBreakPoint(index)) {
+                    delete this.memoryBreakPoints[index];
+                } else {
+                    this.memoryBreakPoints[index] = true;
+                }
+                this.$forceUpdate();
+            },
+            isMemoryBreakPoint: function (index) {
+                return this.memoryBreakPoints.hasOwnProperty(index);
+            },
+
+            isInBreakPoint: function () {
+                return this.isCodeBreakPoint(this.currentCodeIndex) ||
+                    this.isMemoryBreakPoint(this.currentMemoryIndex);
+            },
+        }
+    });
+
+    let app = new Vue({
+        el: '#app',
+        data: {
+            code: '',
+        }
+    })
+</script>
+</body>
+</html>
