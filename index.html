@@ -52,7 +52,7 @@
                 <button class="waves-effect waves-light btn" v-on:click="stop">stop</button>
             </div>
             Memory Index: {{currentMemoryIndex}}<br>
-            Code Index: {{currentCodeIndex}}
+            Code Index: {{currentCodeIndex}}<br>
             <div class="row">
                 {{ message }}
             </div>
@@ -133,6 +133,7 @@
                 codeBreakPoints: {},
                 memoryBreakPoints: {},
                 output: '',
+                loopStack: [],
             };
         },
         computed: {},
@@ -143,7 +144,7 @@
                 this.currentMemoryIndex = 0;
                 this.isRunning = true;
                 this.shouldStop = false;
-                this.loopStack = [];
+                this.pStack = [];
                 this.message = '';
                 this.output = '';
             },
@@ -247,10 +248,18 @@
                 if (this.memory[this.currentMemoryIndex].value !== 0) {
                     this.loopStack.push(this.currentCodeIndex);
                 } else {
+                    this.currentCodeIndex += 1;
+                    var startLoops = 1;
                     while (this.currentCodeIndex < this.codeText.length) {
-                        if (this.codeText[this.currentCodeIndex] === ']') {
-                            this.currentCodeIndex += 1;
+                        if(startLoops===0) {
+                            this.currentCodeIndex -= 1;
                             return
+                        }
+                        if (this.codeText[this.currentCodeIndex] === ']') {
+                            startLoops-=1;
+                        }
+                        if (this.codeText[this.currentCodeIndex] === '['){
+                            startLoops+=1;
                         }
                         this.currentCodeIndex += 1;
                     }
