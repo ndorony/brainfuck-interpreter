@@ -216,16 +216,25 @@ function moveIfTen(offset) {
 function printDecimal() {
     "Src number | unity | tens | hundreds | tmp | if ten | else"
     return `
-print decimal
+print Decimal
+=============
 [
     ->+
     ${moveIfTen(3)} >
     ${moveIfTen(2)}
     <<
 ]
->>>${add(48)}.[-]
-<${add(48)}.[-]
-<${add(48)}.[-]<
+
+Current:
+0 | unity | tens | hundreds | 0 | 0
+^
+hundreds exists
+>>>[${add(48)}.[-]<${add(48)}.[-]<${add(48)}.[-]>>]
+tens exists
+<[>${add(32)}.[-]<${add(48)}.[-]<${add(48)}.[-]>]
+unity exists
+<[>${add(32)}..[-]<${add(48)}.[-]]
+<
 `
 }
 
