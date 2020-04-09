@@ -664,8 +664,7 @@ mul Decimal
                     this.isMemoryBreakPoint(this.currentMemoryIndex);
             },
             getMemoryTitle: function (index, cell) {
-                if (cell.hasOwnProperty('title')) return cell.title;
-                return index;
+                return cell.title || index;
             },
             getVisualValue: function (cell) {
                 if (ASCII.hasOwnProperty(cell.value)) return ASCII[cell.value];
