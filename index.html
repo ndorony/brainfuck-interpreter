@@ -130,6 +130,24 @@
         <div class="row">
             <interpreter v-bind:raw-code-text="code"></interpreter>
         </div>
+        <div class="row">
+            <h5>Functions</h5>
+            <div>${add(5)} -> +++++</div>
+            <div>${sub(3)} -> ---</div>
+            <div>${goto(3)} -> >>></div>
+            <div>${goto(-3)} -> <<<</div>
+            <div>${move{dst}} -> Move current cell to dst.</div>
+            <div>${copy(relativeDst, relativeTmp)} -> Copy current cell to dst and restore value from tmp.</div>
+            <h5>Other</h5>
+            <div>${setVar('a', 5)}  ${add(vars.a)}  -> +++++</div>
+            <div>${setMacro('addFive', 5)} ${macro.addFive)} > ${macro.addFive)}  -> +++++>+++++</div>
+            <div>${declareMemory(['row','col','tmp','result'])} -> Defines title for cells.</div>
+            <div> @ -> Define a breakpoint.</div>
+
+        </div>
+        <div class="row"></div>
+        <div class="row"></div>
+        <div class="row"></div>
     </div>
 
 </div>
@@ -288,7 +306,7 @@
                         tmpLoopsStack[tmpLoopsStack.length - 1].value -= 1;
                     }
                 }
-                for (var i = 0; i < tmpLoopsStack.length; i++) {
+                for ( i = 0; i < tmpLoopsStack.length; i++) {
                     this.comments[tmpLoopsStack[i].start] = 'Syntax Error: Open bracket not found.'
                 }
 
@@ -298,6 +316,13 @@
 
                 let vars = {};
                 let memory = false;
+                let macro = {};
+
+                function setMacro(name, value) {
+                    macro[name] = value;
+                    return ''
+                }
+
                 function setVar(name, value) {
                     vars[name] = value;
                     return ''
@@ -469,6 +494,12 @@ mul Decimal
                 if (memory){
                     this.declaredMemory = memory;
                 }
+                for (let i = 0; i < compiledCode.length; i++) {
+                    if (compiledCode[i] === '@'){
+                        this.codeBreakPoints[i] = true;
+                    }
+                }
+
                 return compiledCode;
             },
 
