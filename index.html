@@ -491,10 +491,21 @@ mul Decimal
 `
 }
 
+function _decimalAddOne(numberLen){
+    if (numberLen === 0) return '';
+    return `${moveIfTen(numberLen)} >${_decimalAddOne(numberLen-1)}<`
+}
+
+function decimalAddOne(numberLen){
+    return `decimalSubOne ${numberLen}
+    +${_decimalAddOne(numberLen)}`
+}
+
 function decimalSubOne(numberLen) {
     if (numberLen === 0) return '';
 
 return `decimalSubOne ${numberLen}
+${goto(numberLen)}[-]${goto(numberLen * -1)}
 ${copy(2+numberLen, numberLen)}
 ${goto(numberLen + 1)} is zero+>[[-]is not zero logic<-${goto(-1*(numberLen + 1))}-${goto(numberLen + 2)}]<
 [[-] is zero logic${goto(-1*(numberLen + 1))}${add(9)}
