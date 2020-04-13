@@ -349,6 +349,7 @@
 
                 function goto(number) {
                     if (number > 0) return Array(number + 1).join(">") + ' ';
+                    if(number === 0) return '';
                     return Array((-1 * number) + 1).join("<") + ' ';
                 }
 
@@ -488,6 +489,21 @@ mul Decimal
     ${goto(dst)}
     ${goto(dst * -1)}
 `
+}
+
+function decimalSubOne(numberLen) {
+    if (numberLen === 0) return '';
+
+return `decimalSubOne ${numberLen}
+${copy(2+numberLen, numberLen)}
+${goto(numberLen + 1)} is zero+>[[-]is not zero logic<-${goto(-1*(numberLen + 1))}-${goto(numberLen + 2)}]<
+[[-] is zero logic${goto(-1*(numberLen + 1))}${add(9)}
+\\\\\\\\\\
+>
+${decimalSubOne(numberLen-1)}
+<
+/////
+${goto(numberLen+1)}]${goto(-1*(numberLen + 1))} `
 }
 
                 let compiledCode = eval('`' + this.rawCodeText + '`');
