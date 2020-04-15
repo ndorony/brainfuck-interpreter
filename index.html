@@ -496,9 +496,25 @@ function _decimalAddOne(numberLen){
     return `${moveIfTen(numberLen)} >${_decimalAddOne(numberLen-1)}<`
 }
 
-function decimalAddOne(numberLen){
+function __decimalAddOne(numberLen){
     return `decimalSubOne ${numberLen}
     +${_decimalAddOne(numberLen)}`
+}
+
+function decimalAddOne(numberLen){
+   if (numberLen === 0) return '';
+
+return `decimalAddOne ${numberLen}
+${goto(numberLen)}[-]${goto(numberLen * -1)}
+${copy(2+numberLen, numberLen)}
+${goto(numberLen + 1)} is nine+>${sub(9)}[[+]is not nine logic<-${goto(-1*(numberLen + 1))}+${goto(numberLen + 2)}]<
+[[-] is nine logic${goto(-1*(numberLen + 1))}[-]
+>
+${decimalAddOne(numberLen-1)}
+<
+/////
+${goto(numberLen+1)}]${goto(-1*(numberLen + 1))}
+`
 }
 
 function decimalSubOne(numberLen) {
