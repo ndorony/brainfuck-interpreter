@@ -63,6 +63,14 @@
             background-color: #1565c0;
         }
 
+        .float-button {
+            position: fixed;
+            right: -77px;
+            top: 270px;
+            transition: all 0.2s ease-in 0s;
+        / / this is the key attribute z-index: 9999;
+            cursor: pointer;
+        }
     </style>
 
     <script type="text/x-template" id="interpreter-template">
@@ -105,6 +113,24 @@
                                           'error': comments.hasOwnProperty(index) }"
                            style="cursor: pointer;white-space: pre-wrap;
                                   font-size: larger;">{{ char }}</span></pre>
+            </div>
+
+
+            <div class="fixed-action-btn">
+                <a class="btn-floating btn-large" v-on:click="run">
+                    <i class="large material-icons">play_arrow</i>
+                </a>
+                <br>
+                <br>
+                <a class="btn-floating btn-large" v-on:click="debug">
+                    <i class="large material-icons">bug_report</i>
+
+                </a>
+                <br>
+                <br>
+                <a class="btn-floating btn-large" v-on:click="step">
+                    <i class="large material-icons">navigate_next</i>
+                </a>
             </div>
             <div class="row">
                 <div class="console">
@@ -589,6 +615,7 @@ ${goto(numberLen+1)}]${goto(-1*(numberLen + 1))} `
                     '[': this.startLoop,
                     ']': this.stopLoop,
                     '.': this.print,
+                    ',': this.getInput,
                 };
                 let stop = false;
 
@@ -608,6 +635,7 @@ ${goto(numberLen+1)}]${goto(-1*(numberLen + 1))} `
                         return;
                     }
                 }
+                this.$forceUpdate();
             },
             stop: function () {
                 this.shouldStop = false;
@@ -615,6 +643,17 @@ ${goto(numberLen+1)}]${goto(-1*(numberLen + 1))} `
                 this.currentCodeIndex = 0;
                 this.initMemory();
                 this.message = '';
+            },
+            getInput: function () {
+                let input = '';
+                while (input === "") {
+                    input = prompt("Please insert input");
+                    if (input === null) {
+                        this.shouldStop = true;
+                        return
+                    }
+                }
+                this.memory[this.currentMemoryIndex].value = input.charCodeAt(0);
             },
             debug: function () {
                 if (!this.isRunning) {
@@ -658,11 +697,9 @@ ${goto(numberLen+1)}]${goto(-1*(numberLen + 1))} `
             },
             right: function () {
                 if (this.currentMemoryIndex === this.memory.length) {
-                    this.shouldStop = true;
-                    this.message = 'Memory out of index.';
-                } else {
-                    this.currentMemoryIndex += 1;
+                    this.memory.push({value: 0,});
                 }
+                this.currentMemoryIndex += 1;
             },
             left: function () {
                 if (this.currentMemoryIndex === 0) {
